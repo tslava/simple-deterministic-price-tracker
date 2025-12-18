@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+project_name = "my-price-tracker"
+region       = "eu-west-3"
+service_name = "price-tracker"
+
+# Product to track
+product_url    = "123123123"
+price_selector = "123123123"  # CSS selector for price element
+
+# Telegram configuration (get from @BotFather)
+telegram_bot_token = "123123123"
+telegram_chat_id   = "123123123"
+
+# Optional: Customize schedule (default: daily at 10:00 UTC)
+# schedule_expression = "cron(0 17 * * ? *)"
+
+# Optional: Adjust Lambda settings
+# lambda_timeout        = 300
+# lambda_memory         = 2048
+# log_retention_days    = 7
