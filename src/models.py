@@ -10,7 +10,6 @@ class PriceRecord:
 
     timestamp: datetime
     price: float
-    currency: str
     url: str
     raw_text: str  # Original scraped text for debugging
 
@@ -19,7 +18,6 @@ class PriceRecord:
         return {
             "timestamp": self.timestamp.isoformat(),
             "price": self.price,
-            "currency": self.currency,
             "url": self.url,
             "raw_text": self.raw_text,
         }
@@ -30,7 +28,6 @@ class PriceRecord:
         return cls(
             timestamp=datetime.fromisoformat(data["timestamp"]),
             price=float(data["price"]),
-            currency=data["currency"],
             url=data["url"],
             raw_text=data["raw_text"],
         )

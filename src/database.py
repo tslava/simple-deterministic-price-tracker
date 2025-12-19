@@ -50,14 +50,13 @@ class PriceDatabase:
                 "timestamp": record.timestamp.isoformat(),
                 # DynamoDB uses Decimal for numbers, not float
                 "price": Decimal(str(record.price)),
-                "currency": record.currency,
                 "url": record.url,
                 "raw_text": record.raw_text,
             }
 
             self.table.put_item(Item=item)
             logger.info(
-                f"Stored price in DynamoDB: {record.price} {record.currency} at {record.timestamp}"
+                f"Stored price in DynamoDB: {record.price} at {record.timestamp}"
             )
 
         except ClientError as e:
@@ -88,12 +87,11 @@ class PriceDatabase:
                 record = PriceRecord(
                     timestamp=datetime.fromisoformat(item["timestamp"]),
                     price=float(item["price"]),  # Convert Decimal back to float
-                    currency=item["currency"],
                     url=item["url"],
                     raw_text=item["raw_text"],
                 )
                 logger.info(
-                    f"Retrieved last price: {record.price} {record.currency} at {record.timestamp}"
+                    f"Retrieved last price: {record.price} at {record.timestamp}"
                 )
                 return record
 
@@ -129,7 +127,6 @@ class PriceDatabase:
                 PriceRecord(
                     timestamp=datetime.fromisoformat(item["timestamp"]),
                     price=float(item["price"]),
-                    currency=item["currency"],
                     url=item["url"],
                     raw_text=item["raw_text"],
                 )

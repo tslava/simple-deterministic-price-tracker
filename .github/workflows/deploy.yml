@@ -1,0 +1,107 @@
+name: Deploy Price Tracker to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-3
+  ECR_REPOSITORY: price-tracker
+  LAMBDA_FUNCTION: price-tracker
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get AWS Account ID
+        id: account
+        run: echo "account_id=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_OUTPUT
+
+      - name: Check and clean existing ECR repository
+        run: |
+          if aws ecr describe-repositories --repository-names $ECR_REPOSITORY --region $AWS_REGION &> /dev/null; then
+            echo "Found existing repository, deleting it..."
+            aws ecr delete-repository --repository-name $ECR_REPOSITORY --region $AWS_REGION --force
+            echo "Repository deleted"
+          else
+            echo "No existing repository found"
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Create ECR repository with Terraform
+        working-directory: ./terraform
+        env:
+          TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TF_VAR_telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TF_VAR_product_url: ${{ vars.PRODUCT_URL }}
+          TF_VAR_price_selector: ${{ vars.PRICE_SELECTOR }}
+        run: |
+          terraform init -upgrade
+          terraform apply -target=aws_ecr_repository.price_tracker -target=aws_ecr_lifecycle_policy.price_tracker -auto-approve
+
+      - name: Build Docker image
+        run: |
+          docker build -t $ECR_REPOSITORY .
+          echo "Docker image built successfully"
+
+      - name: Tag and push Docker image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: latest
+        run: |
+          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "Image pushed to $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Deploy infrastructure with Terraform
+        working-directory: ./terraform
+        env:
+          TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TF_VAR_telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TF_VAR_product_url: ${{ vars.PRODUCT_URL }}
+          TF_VAR_price_selector: ${{ vars.PRICE_SELECTOR }}
+        run: |
+          terraform apply -auto-approve
+          echo "Infrastructure deployed successfully"
+
+      - name: Verify Lambda function
+        run: |
+          aws lambda get-function --function-name $LAMBDA_FUNCTION --region $AWS_REGION --no-cli-pager
+          echo "Lambda function verified"
+
+      - name: Deployment Summary
+        run: |
+          echo "=================================="
+          echo "Deployment completed successfully!"
+          echo "=================================="
+          echo ""
+          echo "Lambda Function: $LAMBDA_FUNCTION"
+          echo "Region: $AWS_REGION"
+          echo ""
+          echo "Test command:"
+          echo "  aws lambda invoke --function-name $LAMBDA_FUNCTION --region $AWS_REGION output.json"
+          echo ""
+          echo "View logs:"
+          echo "  aws logs tail /aws/lambda/$LAMBDA_FUNCTION --follow --region $AWS_REGION"

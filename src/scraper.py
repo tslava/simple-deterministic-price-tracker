@@ -26,12 +26,12 @@ class PriceScraper:
         self.timeout = timeout
         logger.info(f"Initialized scraper for URL: {url}")
 
-    def scrape_price(self) -> Tuple[Decimal, str, str]:
+    def scrape_price(self) -> Tuple[Decimal, str]:
         """
         Scrape price from the configured URL
 
         Returns:
-            Tuple of (price, currency, raw_text)
+            Tuple of (price, raw_text)
 
         Raises:
             PlaywrightTimeoutError: If page or element doesn't load in time
@@ -83,11 +83,11 @@ class PriceScraper:
                     raw_text = element.inner_text().strip()
                     logger.info(f"Raw price text extracted: '{raw_text}'")
 
-                    # Parse price and currency
-                    price, currency = self._parse_price(raw_text)
-                    logger.info(f"Parsed price: {price} {currency}")
+                    # Parse price
+                    price = self._parse_price(raw_text)
+                    logger.info(f"Parsed price: {price}")
 
-                    return price, currency, raw_text
+                    return price, raw_text
 
                 finally:
                     browser.close()
@@ -101,21 +101,21 @@ class PriceScraper:
             logger.error(f"Error during price scraping: {e}", exc_info=True)
             raise
 
-    def _parse_price(self, text: str) -> Tuple[Decimal, str]:
+    def _parse_price(self, text: str) -> Decimal:
         """
-        Parse price and currency from text
+        Parse price from text
 
         Supports various formats:
-        - $1,234.56
-        - 1.234,56 €
-        - £99.99
-        - 999 USD
+        - 1,234.56
+        - 1.234,56
+        - 99.99
+        - 151,03
 
         Args:
             text: Raw price text
 
         Returns:
-            Tuple of (price as Decimal, currency symbol/code)
+            Price as Decimal
 
         Raises:
             ValueError: If price cannot be parsed
@@ -124,13 +124,6 @@ class PriceScraper:
             # Remove whitespace
             text = text.strip()
             logger.debug(f"Parsing price from: '{text}'")
-
-            # Extract currency symbol or code
-            # Common symbols: $, €, £, ¥, ₹
-            # Currency codes: USD, EUR, GBP, etc.
-            currency_pattern = r"([$€£¥₹]|[A-Z]{3})"
-            currency_match = re.search(currency_pattern, text)
-            currency = currency_match.group(0) if currency_match else "USD"
 
             # Extract numeric part
             # Remove everything except digits, commas, and periods
@@ -171,9 +164,9 @@ class PriceScraper:
 
             # Convert to Decimal
             price = Decimal(numeric_text)
-            logger.debug(f"Successfully parsed: {price} {currency}")
+            logger.debug(f"Successfully parsed: {price}")
 
-            return price, currency
+            return price
 
         except (InvalidOperation, ValueError) as e:
             logger.error(f"Failed to parse price from '{text}': {e}")

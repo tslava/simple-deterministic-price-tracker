@@ -28,7 +28,6 @@ class TelegramNotifier:
     def send_price_update(
         self,
         current_price: Decimal,
-        currency: str,
         url: str,
         last_price: Optional[float] = None,
     ) -> bool:
@@ -37,7 +36,6 @@ class TelegramNotifier:
 
         Args:
             current_price: Current price value
-            currency: Currency symbol or code
             url: Product URL
             last_price: Previous price for comparison (optional)
 
@@ -67,7 +65,7 @@ class TelegramNotifier:
             message = f"""
 {trend} <b>Price Update</b>
 
-Current Price: <b>{currency} {float(current_price):.2f}</b>
+Current Price: <b>{float(current_price):.2f}</b>
 Change: {change_text}
 Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
 

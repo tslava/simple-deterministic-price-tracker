@@ -45,8 +45,8 @@ def lambda_handler(event, context):
 
         # Scrape current price
         logger.info("Starting price scrape...")
-        price, currency, raw_text = scraper.scrape_price()
-        logger.info(f"✓ Price scraped: {currency} {price}")
+        price, raw_text = scraper.scrape_price()
+        logger.info(f"✓ Price scraped: {price}")
 
         # Get last price for comparison
         logger.info("Retrieving price history...")
@@ -54,7 +54,7 @@ def lambda_handler(event, context):
         last_price = last_record.price if last_record else None
 
         if last_price:
-            logger.info(f"Last recorded price: {last_record.currency} {last_price}")
+            logger.info(f"Last recorded price: {last_price}")
         else:
             logger.info("No previous price records found (first check)")
 
@@ -62,7 +62,6 @@ def lambda_handler(event, context):
         record = PriceRecord(
             timestamp=datetime.utcnow(),
             price=float(price),
-            currency=currency,
             url=config.PRODUCT_URL,
             raw_text=raw_text,
         )
@@ -75,7 +74,7 @@ def lambda_handler(event, context):
         # Send Telegram notification
         logger.info("Sending Telegram notification...")
         notification_sent = notifier.send_price_update(
-            price, currency, config.PRODUCT_URL, last_price
+            price, config.PRODUCT_URL, last_price
         )
 
         if notification_sent:
@@ -90,7 +89,6 @@ def lambda_handler(event, context):
                 {
                     "success": True,
                     "price": float(price),
-                    "currency": currency,
                     "timestamp": record.timestamp.isoformat(),
                     "previous_price": last_price,
                     "notification_sent": notification_sent,
