@@ -75,6 +75,17 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "Image pushed to $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
+      - name: Import existing resources (if they exist)
+        working-directory: ./terraform
+        continue-on-error: true
+        run: |
+          # Import existing resources if they exist (ignore errors if they don't)
+          terraform import aws_cloudwatch_log_group.lambda_logs /aws/lambda/price-tracker 2>/dev/null || true
+          terraform import aws_dynamodb_table.price_history my-price-tracker-price-history 2>/dev/null || true
+          terraform import aws_iam_role.lambda_exec price-tracker-lambda-exec 2>/dev/null || true
+          terraform import aws_iam_role.eventbridge_scheduler price-tracker-eventbridge-scheduler 2>/dev/null || true
+          echo "Existing resources imported (if any)"
+
       - name: Deploy infrastructure with Terraform
         working-directory: ./terraform
         env:
