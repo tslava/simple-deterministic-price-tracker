@@ -279,4 +279,4 @@ All well within free tier!
 
 ---
 
-Built by [Wiaczeslaw Cyunczyk](https://cyunczyk.dev)
+Built by [Wiaczeslaw Cyunczyk](https://tslava.dev)
