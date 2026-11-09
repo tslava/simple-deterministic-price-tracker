@@ -1,9 +1,7 @@
 name: Deploy Price Tracker to AWS Lambda
 
 on:
-  push:
-    branches:
-      - main
+  # Manual only: needs AWS credentials in repo secrets.
   workflow_dispatch:
 
 env:

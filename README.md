@@ -1,6 +1,19 @@
-# Price Tracker - AWS Lambda (Free Tier)
+# simple-deterministic-price-tracker
 
-A serverless price tracker that runs daily on AWS Lambda, scrapes product prices using Playwright, stores history in DynamoDB, and sends notifications via Telegram - all within AWS free tier limits.
+**A daily price watcher that runs on the AWS free tier.** A Lambda container opens the product page in headless Chromium, reads the price with a CSS selector, stores the history in DynamoDB and sends the current and previous price to Telegram. Deterministic on purpose: a selector, not an LLM, reads the price.
+
+```mermaid
+flowchart LR
+  sched[EventBridge Scheduler<br/>daily] --> lambda[Lambda container<br/>Python 3.12 + Playwright, ARM64]
+  ssm[SSM Parameter Store<br/>URL, selector, secrets] --> lambda
+  lambda -->|headless Chromium| page[Product page]
+  lambda --> ddb[(DynamoDB<br/>price history)]
+  lambda --> tg[Telegram Bot API]
+```
+
+**Cost:** about $0–0.20 per month. **Infra:** Terraform, image in ECR, deploy by script or GitHub Actions.
+
+**Stack:** Python 3.12 · Playwright · AWS Lambda (container, Graviton) · DynamoDB · EventBridge Scheduler · SSM · ECR · Terraform · GitHub Actions
 
 ## Architecture
 
@@ -262,4 +275,8 @@ All well within free tier!
 
 ## License
 
-MIT
+[MIT](LICENSE)
+
+---
+
+Built by [Wiaczeslaw Cyunczyk](https://cyunczyk.dev)
